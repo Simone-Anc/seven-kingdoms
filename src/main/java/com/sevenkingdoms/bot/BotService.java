@@ -82,14 +82,21 @@ public class BotService {
                     executeBotMercanteEco(gameId, botIdx, state);
                     continue;
                 }
-                // Risolvi la fase passiva automaticamente
+                // Risolvi la fase passiva automaticamente solo se tutti bot
+                // altrimenti l'umano clicca il bottone
+                boolean allBotsPassive = state.getPlayers().stream().allMatch(Player::isBot);
+                if (!allBotsPassive) break; // esce dal loop, aspetta click umano
                 Thread.sleep(600 + random.nextInt(400));
                 passivePhaseService.resolvePassivePhase(gameId);
                 continue;
             }
 
             // ── END_TURN ──────────────────────────────────────────────────────
+            // Risolvi automaticamente solo se TUTTI i giocatori sono bot
+            // Se c'è almeno un umano, lascia che sia lui a cliccare "Fine Turno"
             if (state.getPhase() == GamePhase.END_TURN) {
+                boolean allBots = state.getPlayers().stream().allMatch(Player::isBot);
+                if (!allBots) break; // esce dal loop, aspetta click umano
                 Thread.sleep(600 + random.nextInt(400));
                 endTurnService.resolveEndTurn(gameId);
                 continue;
