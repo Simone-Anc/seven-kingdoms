@@ -33,6 +33,10 @@ public class GameRepository {
                 .orElseThrow(() -> GameException.notFound("Partita non trovata: " + gameId));
     }
 
+    public java.util.Collection<com.sevenkingdoms.model.GameState> findAll() {
+        return games.values();
+    }
+
     public void delete(String gameId) {
         games.remove(gameId);
     }

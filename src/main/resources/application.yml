@@ -4,6 +4,16 @@ server:
 spring:
   application:
     name: seven-kingdoms
+  # Disabilita la security auto-config di default (usiamo la nostra)
+  security:
+    user:
+      name: disabled
+      password: disabled
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:sevenkingdoms-super-secret-key-minimum-32-chars-long-2024}
+    expiration-ms: 604800000  # 7 giorni
 
 game:
   max-players: 4

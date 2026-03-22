@@ -1,7 +1,11 @@
 package com.sevenkingdoms.api;
 
+import com.sevenkingdoms.auth.AppUser;
+import com.sevenkingdoms.auth.AuthService;
 import com.sevenkingdoms.bot.BotService;
+import com.sevenkingdoms.exception.GameException;
 import com.sevenkingdoms.model.GameState;
+import com.sevenkingdoms.model.Player;
 import com.sevenkingdoms.model.enums.ActionType;
 import com.sevenkingdoms.model.enums.CharacterType;
 import com.sevenkingdoms.repository.GameRepository;
@@ -10,6 +14,7 @@ import com.sevenkingdoms.service.ReService.CubePlacementRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -31,6 +36,46 @@ public class GameController {
     private final EsercitoService esercitoService;
     private final GameRepository gameRepository;
     private final BotService botService;
+    private final AuthService authService;
+
+    // ── Helper: verifica turno ───────────────────────────────────────────────
+
+    /**
+     * Verifica che l'utente autenticato sia il giocatore corrente nella partita.
+     * Se l'utente non è autenticato (partita locale senza login) lascia passare.
+     */
+    private void validateTurn(String gameId, String playerId, AppUser currentUser) {
+        if (currentUser == null) return; // partita locale, nessun controllo
+        GameState state = gameRepository.getOrThrow(gameId);
+        Player currentPlayer = state.getCurrentPlayer();
+        // Verifica che il playerId nella richiesta corrisponda al giocatore corrente
+        if (!currentPlayer.getId().equals(playerId)) {
+            throw GameException.invalidAction("Non è il tuo turno");
+        }
+        // Verifica che l'utente loggato sia associato a quel player
+        // (il nickname del player deve corrispondere al nickname dell'utente)
+        if (!currentPlayer.getName().equalsIgnoreCase(currentUser.getNickname())
+                && !currentPlayer.isBot()) {
+            throw GameException.invalidAction("Non sei autorizzato ad agire per questo giocatore");
+        }
+    }
+
+    // ── Lobby: partite in attesa ──────────────────────────────────────────────
+
+    @GetMapping("/lobby")
+    public ResponseEntity<List<LobbyEntry>> getLobby() {
+        List<LobbyEntry> lobby = gameService.getLobbyEntries();
+        return ResponseEntity.ok(lobby);
+    }
+
+    public record LobbyEntry(
+        String gameId,
+        String creatorName,
+        int totalSlots,
+        int takenSlots,
+        int missingPlayers,
+        List<String> playerNames
+    ) {}
 
     // ── Health check ──────────────────────────────────────────────────────────
 

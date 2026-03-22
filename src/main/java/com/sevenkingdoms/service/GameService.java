@@ -164,6 +164,30 @@ public class GameService {
         return saved;
     }
 
+    // ── Lobby ─────────────────────────────────────────────────────────────────
+
+    public List<com.sevenkingdoms.api.GameController.LobbyEntry> getLobbyEntries() {
+        return gameRepository.findAll().stream()
+            .filter(state -> state.getPhase() == com.sevenkingdoms.model.enums.GamePhase.SETUP)
+            .filter(state -> state.getPlayers().stream().anyMatch(p -> p.isBot()))
+            .map(state -> {
+                int totalSlots = state.getPlayers().size();
+                long takenSlots = state.getPlayers().stream().filter(p -> !p.isBot()).count();
+                int missingPlayers = (int)(totalSlots - takenSlots);
+                String creatorName = state.getPlayers().stream()
+                    .filter(p -> !p.isBot()).findFirst()
+                    .map(p -> p.getName()).orElse("?");
+                java.util.List<String> playerNames = state.getPlayers().stream()
+                    .map(p -> p.isBot() ? "— posto libero —" : p.getName())
+                    .collect(java.util.stream.Collectors.toList());
+                return new com.sevenkingdoms.api.GameController.LobbyEntry(
+                    state.getGameId(), creatorName, totalSlots,
+                    (int) takenSlots, missingPlayers, playerNames
+                );
+            })
+            .collect(java.util.stream.Collectors.toList());
+    }
+
     public GameRepository getRepository() {
         return gameRepository;
     }
