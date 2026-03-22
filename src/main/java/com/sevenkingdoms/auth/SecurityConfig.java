@@ -35,10 +35,11 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/games/lobby").permitAll()
                 .requestMatchers("/api/games/health").permitAll()
+                .requestMatchers("/api/games/**").permitAll()  // partite pubbliche per ora
                 .requestMatchers("/ws/**").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 // Tutto il resto richiede autenticazione
-                .anyRequest().authenticated()
+                .anyRequest().permitAll()
             )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
