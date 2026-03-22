@@ -4,8 +4,6 @@
     "builder": "DOCKERFILE"
   },
   "deploy": {
-    "startCommand": "java -jar app.jar",
-    "healthcheckPath": "/api/health",
     "restartPolicyType": "ON_FAILURE"
   }
 }
