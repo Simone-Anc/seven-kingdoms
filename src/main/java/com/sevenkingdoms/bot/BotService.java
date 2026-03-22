@@ -37,6 +37,11 @@ public class BotService {
     @Async("taskExecutor")
     public void triggerBotTurnIfNeeded(String gameId) {
         try {
+            GameState state = gameRepository.getOrThrow(gameId);
+            log.info("Bot trigger: fase={} currentPlayer={} isBot={}",
+                state.getPhase(),
+                state.getCurrentPlayer().getName(),
+                state.getCurrentPlayer().isBot());
             processBotLoop(gameId);
         } catch (Exception e) {
             log.error("Errore nel loop bot per partita {}: {}", gameId, e.getMessage(), e);
