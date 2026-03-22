@@ -1,0 +1,15 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: seven-kingdoms
+
+game:
+  max-players: 4
+  min-players: 2
+  provinces: 7
+  cubes-per-player: 20
+  invasion-cubes: 30
+  religious-markers: 9
+  papal-favors: 4

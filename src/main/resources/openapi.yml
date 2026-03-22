@@ -1,0 +1,543 @@
+openapi: 3.0.3
+info:
+  title: Seven Kingdoms API
+  description: API per il gioco da tavolo Seven Kingdoms
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Local development
+
+tags:
+  - name: game
+    description: Gestione partita (crea, entra, stato)
+  - name: action
+    description: Azioni dei giocatori durante il turno
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PATHS
+# ─────────────────────────────────────────────────────────────────────────────
+paths:
+
+  /api/games:
+    post:
+      tags: [game]
+      operationId: createGame
+      summary: Crea una nuova partita
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGameRequest'
+      responses:
+        '201':
+          description: Partita creata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameStateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/games/{gameId}:
+    get:
+      tags: [game]
+      operationId: getGameState
+      summary: Ritorna lo stato corrente della partita
+      parameters:
+        - $ref: '#/components/parameters/gameId'
+      responses:
+        '200':
+          description: Stato attuale della partita
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameStateResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/games/{gameId}/setup/place-cube:
+    post:
+      tags: [game]
+      operationId: placeInitialCube
+      summary: Piazza un cubetto nella fase di setup iniziale
+      parameters:
+        - $ref: '#/components/parameters/gameId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaceInitialCubeRequest'
+      responses:
+        '200':
+          description: Cubetto piazzato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameStateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/games/{gameId}/actions/re:
+    post:
+      tags: [action]
+      operationId: actionRe
+      summary: Azione del Re (normale o potenziata)
+      parameters:
+        - $ref: '#/components/parameters/gameId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReActionRequest'
+      responses:
+        '200':
+          description: Azione eseguita
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameStateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/InvalidAction'
+
+  /api/games/{gameId}/actions/papa:
+    post:
+      tags: [action]
+      operationId: actionPapa
+      summary: Azione del Papa (normale o potenziata)
+      parameters:
+        - $ref: '#/components/parameters/gameId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PapaActionRequest'
+      responses:
+        '200':
+          description: Azione eseguita
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameStateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/games/{gameId}/actions/mercante:
+    post:
+      tags: [action]
+      operationId: actionMercante
+      summary: Azione del Mercante (manda cubetti al mercato)
+      parameters:
+        - $ref: '#/components/parameters/gameId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MercanteActionRequest'
+      responses:
+        '200':
+          description: Azione eseguita
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameStateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/games/{gameId}/actions/spia:
+    post:
+      tags: [action]
+      operationId: actionSpia
+      summary: Azione della Spia (scambia cubetti)
+      parameters:
+        - $ref: '#/components/parameters/gameId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpiaActionRequest'
+      responses:
+        '200':
+          description: Azione eseguita
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameStateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/games/{gameId}/actions/esercito:
+    post:
+      tags: [action]
+      operationId: actionEsercito
+      summary: Azione di Fanteria o Cavalleria (elimina cubetti invasione / dichiara battaglia)
+      parameters:
+        - $ref: '#/components/parameters/gameId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EsercitoActionRequest'
+      responses:
+        '200':
+          description: Azione eseguita
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameStateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/games/{gameId}/actions/passive:
+    post:
+      tags: [action]
+      operationId: resolvePassivePhase
+      summary: Risolve la fase passiva (chiamata quando tutti i giocatori hanno agito)
+      parameters:
+        - $ref: '#/components/parameters/gameId'
+      responses:
+        '200':
+          description: Fase passiva risolta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameStateResponse'
+        '409':
+          $ref: '#/components/responses/InvalidAction'
+
+  /api/games/{gameId}/actions/end-turn:
+    post:
+      tags: [action]
+      operationId: resolveEndTurn
+      summary: Risolve la fase di fine turno (invasione, costo guerra, check fine gioco)
+      parameters:
+        - $ref: '#/components/parameters/gameId'
+      responses:
+        '200':
+          description: Fine turno risolto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameStateResponse'
+
+# ─────────────────────────────────────────────────────────────────────────────
+# COMPONENTS
+# ─────────────────────────────────────────────────────────────────────────────
+components:
+
+  parameters:
+    gameId:
+      name: gameId
+      in: path
+      required: true
+      schema:
+        type: string
+        example: "abc-123"
+
+  responses:
+    BadRequest:
+      description: Richiesta non valida
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Risorsa non trovata
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InvalidAction:
+      description: Azione non consentita in questo stato di gioco
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+
+    # ── Requests ──────────────────────────────────────────────────────────────
+
+    CreateGameRequest:
+      type: object
+      required: [players]
+      properties:
+        players:
+          type: array
+          minItems: 2
+          maxItems: 4
+          items:
+            $ref: '#/components/schemas/PlayerSetup'
+
+    PlayerSetup:
+      type: object
+      required: [name, color]
+      properties:
+        name:
+          type: string
+          example: "Marco"
+        color:
+          type: string
+          enum: [red, blue, green, yellow]
+
+    PlaceInitialCubeRequest:
+      type: object
+      required: [playerId, provinceId]
+      properties:
+        playerId:
+          type: string
+        provinceId:
+          type: integer
+          minimum: 0
+          maximum: 6
+
+    ReActionRequest:
+      type: object
+      required: [playerId, actionType, moveToProvinceId]
+      properties:
+        playerId:
+          type: string
+        actionType:
+          $ref: '#/components/schemas/ActionType'
+        moveToProvinceId:
+          type: integer
+          description: Provincia dove si sposta il Re (-1 se rimane fermo)
+          minimum: -1
+          maximum: 6
+        cubePlacements:
+          type: array
+          description: Lista dei cubetti da piazzare con il colore scelto
+          items:
+            $ref: '#/components/schemas/CubePlacement'
+
+    PapaActionRequest:
+      type: object
+      required: [playerId, actionType, moveToProvinceId, religiousTargetProvinceId]
+      properties:
+        playerId:
+          type: string
+        actionType:
+          $ref: '#/components/schemas/ActionType'
+        moveToProvinceId:
+          type: integer
+          minimum: -1
+          maximum: 6
+        religiousTargetProvinceId:
+          type: integer
+          description: Provincia dove mettere il segnalino influenza religiosa
+          minimum: 0
+          maximum: 6
+        cathedralProvinceId:
+          type: integer
+          description: (solo azione potenziata) Provincia dove mettere il vescovo
+          minimum: 0
+          maximum: 6
+
+    MercanteActionRequest:
+      type: object
+      required: [playerId, actionType, moveToProvinceId]
+      properties:
+        playerId:
+          type: string
+        actionType:
+          $ref: '#/components/schemas/ActionType'
+        moveToProvinceId:
+          type: integer
+          minimum: -1
+          maximum: 6
+
+    SpiaActionRequest:
+      type: object
+      required: [playerId, actionType, moveToProvinceId]
+      properties:
+        playerId:
+          type: string
+        actionType:
+          $ref: '#/components/schemas/ActionType'
+        moveToProvinceId:
+          type: integer
+          minimum: -1
+          maximum: 6
+        swapA:
+          $ref: '#/components/schemas/CubePosition'
+        swapB:
+          $ref: '#/components/schemas/CubePosition'
+
+    EsercitoActionRequest:
+      type: object
+      required: [playerId, actionType, characterType, moveToProvinceId]
+      properties:
+        playerId:
+          type: string
+        actionType:
+          $ref: '#/components/schemas/ActionType'
+        characterType:
+          type: string
+          enum: [FANTERIA, CAVALLERIA]
+        moveToProvinceId:
+          type: integer
+          minimum: -1
+          maximum: 6
+        declareBattle:
+          type: boolean
+          description: true se il giocatore dichiara battaglia nella provincia in guerra
+
+    CubePlacement:
+      type: object
+      required: [provinceId, playerIndex]
+      properties:
+        provinceId:
+          type: integer
+          minimum: 0
+          maximum: 6
+        playerIndex:
+          type: integer
+          description: Indice del giocatore proprietario del cubetto (0-3)
+          minimum: 0
+          maximum: 3
+
+    CubePosition:
+      type: object
+      required: [provinceId, slotIndex]
+      properties:
+        provinceId:
+          type: integer
+          minimum: 0
+          maximum: 6
+        slotIndex:
+          type: integer
+          description: Posizione nella traccia politica (0 = Governatore)
+          minimum: 0
+
+    ActionType:
+      type: string
+      enum: [NORMALE, POTENZIATA]
+
+    # ── Responses ─────────────────────────────────────────────────────────────
+
+    GameStateResponse:
+      type: object
+      properties:
+        gameId:
+          type: string
+        phase:
+          type: string
+          enum: [SETUP, PLAYER_ACTIONS, PASSIVE_ACTIONS, END_TURN, GAME_OVER]
+        turnNumber:
+          type: integer
+        currentPlayerIndex:
+          type: integer
+        firstPlayerIndex:
+          type: integer
+        players:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlayerResponse'
+        provinces:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProvinceResponse'
+        characters:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/CharacterResponse'
+        marketCubes:
+          type: array
+          items:
+            type: integer
+          description: Numero di cubetti nel mercato per ogni giocatore (indice = playerIndex)
+        eventLog:
+          type: array
+          items:
+            type: string
+        gameOver:
+          type: boolean
+        winner:
+          type: string
+          nullable: true
+
+    PlayerResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        color:
+          type: string
+        colorIndex:
+          type: integer
+        cubesInReserve:
+          type: integer
+        papalFavors:
+          type: integer
+        hasFirstPlayerToken:
+          type: boolean
+        actionDone:
+          type: boolean
+        marketCubes:
+          type: integer
+        victoryPoints:
+          type: integer
+
+    ProvinceResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        capital:
+          type: boolean
+        status:
+          type: string
+          enum: [NORMALE, PACIFICATA, GUERRA]
+        politicalTrack:
+          type: array
+          description: -1 = cubetto invasione, 0-3 = indice giocatore
+          items:
+            type: integer
+        maxPoliticalSlots:
+          type: integer
+        economicValue:
+          type: integer
+        religiousMarkers:
+          type: integer
+        cathedralPlayerIndex:
+          type: integer
+          description: -1 se vuota
+        adjacentIds:
+          type: array
+          items:
+            type: integer
+
+    CharacterResponse:
+      type: object
+      properties:
+        type:
+          type: string
+        currentProvinceId:
+          type: integer
+        usedThisTurn:
+          type: boolean
+        declaredBattle:
+          type: boolean
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          example: "INVALID_ACTION"
+        message:
+          type: string
+          example: "Il Re non può muoversi in una provincia in guerra"
